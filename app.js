@@ -85,6 +85,7 @@ function render() {
   $("left").style.color = COLORS[lv];
   $("pill").textContent = T.pills[lv];
   $("pill").style.background = COLORS[lv];
+  $("pill").title = `每天计划 ${fmt(c.daily)}%，到今天累计 ${fmt(c.cum)}%`;  // hover tooltip
 
   // Projection: when would the quota run out if the average rate so far continued?
   const elapsed = c.now - c.ws;
