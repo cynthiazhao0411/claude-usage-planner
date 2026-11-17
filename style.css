@@ -50,11 +50,12 @@ button.sm{padding:5px 9px;font-size:13px}
 @media (prefers-reduced-motion:no-preference){#arc{transition:stroke-dasharray .5s}.bar .u{transition:width .5s}}
 
 [hidden]{display:none !important}
-/* Short window (mini mode): two columns, input on the left and gauge on the right. */
+/* Short window (mini mode): only the gauge card is shown; the input card is hidden (use Restore to edit). */
 @media (max-height:600px){
   .full{display:none}
-  main{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;padding:8px;align-content:start}
+  main{display:grid;grid-template-columns:1fr;gap:8px;padding:8px;align-content:start}
   header{grid-column:1/-1}
+  #app > section:first-of-type{display:none}
   h1{font-size:15px}
   .card{margin:0;padding:10px}
   .card .row.between{flex-direction:column;align-items:flex-start}
