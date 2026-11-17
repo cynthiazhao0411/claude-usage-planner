@@ -45,4 +45,7 @@ button.sm{padding:5px 9px;font-size:13px}
 .route a.app{background:transparent;color:var(--ink);border:1px solid var(--line)}
 /* Compact mode: only the essentials stay visible (for a small pinned window). */
 .compact .full{display:none}
+.compact .gauge svg{max-width:220px}
+/* A short window (e.g. the installed app resized small) switches to the compact layout automatically. */
+@media (max-height:600px){.full{display:none}.gauge svg{max-width:220px}.card{margin:8px 0;padding:10px}main{padding:10px}}
 @media (prefers-reduced-motion:no-preference){#arc{transition:stroke-dasharray .5s}.bar .u{transition:width .5s}}

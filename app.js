@@ -13,6 +13,7 @@ const S = {
   lang: "zh", compact: false,
 };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) { /* storage unavailable */ }
+S.lang = "zh"; // UI is Chinese only; ignore any stale value saved by an older version
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } };
 
 const app = document.getElementById("app");
@@ -29,7 +30,6 @@ const I18N = {
     dayStartNote: "每天自动记录。第一次是估算值，不准可以改。",
     apply: "应用", close: "知道了",
     note: "额度每周重置，用不完不会累积，所以留一点余量就好，不必过度省。",
-    noPip: "弹出窗口需要 Chrome 或 Edge 116+。也可以安装成应用并使用紧凑模式。",
     head: (d, b) => `本周第 ${d} 天。平均每天 14.3%，今天的预算是 ${fmt(b)}%。`,
     msg: (b, u, r, ah) => `预算 ${fmt(b)}%，今天已用 ${fmt(u)}%，本周还剩 ${fmt(r)}%。` +
       (ah > 1 ? `比平均进度超前 ${fmt(ah)}%。` : ah < -1 ? `比平均进度落后 ${fmt(-ah)}%。` : "刚好在平均进度上。"),
@@ -171,18 +171,6 @@ $("apply").onclick = () => {
   S.snap = null; S.last = null; calc();
   if (!isNaN(sd)) S.snap.used = Math.min(S.used, clamp(sd));
   render();
-};
-
-// Pop-out: Document Picture-in-Picture gives an always-on-top mini window (Chromium 116+).
-$("pip").onclick = async () => {
-  if (!("documentPictureInPicture" in window)) { alert(t().noPip); return; }
-  const w = await documentPictureInPicture.requestWindow({ width: 340, height: 460 });
-  [...document.styleSheets].forEach(s => {
-    if (s.href) { const l = w.document.createElement("link"); l.rel = "stylesheet"; l.href = s.href; w.document.head.append(l); }
-  });
-  S.compact = true; render();
-  w.document.body.append(app);
-  w.addEventListener("pagehide", () => { document.body.append(app); });
 };
 
 $("hh").value = S.hh; $("mm").value = S.mm; fillDays(); render();
