@@ -11,6 +11,13 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="style.css">
+<script>
+/* Decide the layout mode before first paint: mini (popup) / medium (short window) / large. Phones always use large. */
+window.cupMode=function(){var ua=navigator.userAgent,d=document.documentElement,
+phone=/Android|iPhone|iPad|iPod/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),
+m=phone?"large":new URLSearchParams(location.search).has("mini")?"mini":innerHeight<=560?"medium":"large";
+d.dataset.mode=m;d.dataset.phone=phone?"1":"0";return m;};cupMode();
+</script>
 <title>Claude 用量规划器</title>
 </head>
 <body>
@@ -23,7 +30,7 @@
   </header>
   <p class="sub full" id="head"></p>
 
-  <section class="card">
+  <section class="card" id="inputCard">
     <div class="row between">
       <label for="used" data-i="usedWeek"></label>
       <div class="row">
@@ -34,7 +41,7 @@
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="gaugeCard">
     <div class="gauge">
       <svg viewBox="0 0 200 112" aria-hidden="true">
         <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="var(--track)" stroke-width="18" stroke-linecap="round"/>

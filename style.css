@@ -1,7 +1,7 @@
-/* Theme tokens; dark values are applied automatically via prefers-color-scheme. */
+/* Theme tokens: light everywhere; dark only in the small popup (html[data-mode="mini"]). */
 :root{--bg:#eef3f1;--card:#fff;--ink:#14262e;--mute:#5d7078;--line:#d5e0dc;--ok:#0f8a6d;--warn:#d98a00;--bad:#c42746;--track:#dfe9e5;
 padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root{--bg:#0d181d;--card:#15252c;--ink:#e8f1ee;--mute:#93a8a1;--line:#27404a;--ok:#35c9a2;--warn:#f0b43a;--bad:#ff6b85;--track:#22373f}}
+html[data-mode="mini"]{--bg:#0d181d;--card:#15252c;--ink:#e8f1ee;--mute:#93a8a1;--line:#27404a;--ok:#35c9a2;--warn:#f0b43a;--bad:#ff6b85;--track:#22373f;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"PingFang SC","Noto Sans SC","Segoe UI",sans-serif}
@@ -43,25 +43,34 @@ button.sm{padding:5px 9px;font-size:13px}
 .route p{margin:2px 0 8px;font-size:14px;color:var(--mute)}
 .route a{display:inline-block;margin-right:6px;padding:7px 11px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;background:var(--ink);color:var(--bg)}
 .route a.app{background:transparent;color:var(--ink);border:1px solid var(--line)}
-/* Compact mode: only the essentials stay visible (for a small pinned window). */
-.compact .full{display:none}
-.compact .gauge svg{max-width:220px}
-/* A short window (e.g. the installed app resized small) switches to the compact layout automatically. */
 @media (prefers-reduced-motion:no-preference){#arc{transition:stroke-dasharray .5s}.bar .u{transition:width .5s}}
-
 [hidden]{display:none !important}
-/* Short window (mini mode): only the gauge card is shown; the input card is hidden (use Restore to edit). */
-@media (max-height:600px){
-  .full{display:none}
-  main{display:grid;grid-template-columns:1fr;gap:8px;padding:8px;align-content:start}
-  header{grid-column:1/-1}
-  #app > section:first-of-type{display:none}
-  h1{font-size:15px}
-  .card{margin:0;padding:10px}
-  .card .row.between{flex-direction:column;align-items:flex-start}
-  .gauge svg{max-width:190px}
-  .gc .n{font-size:30px}
-  .gc .t{font-size:12px}
-  .pill{font-size:12px;padding:2px 10px}
-  #adv{padding:5px 10px;font-size:13px}
-}
+html[data-phone="1"] #mini{display:none}
+
+/* MEDIUM (default desktop window): flat two columns. Left: today's gauge. Right: weekly input. */
+html[data-mode="medium"] .full{display:none}
+html[data-mode="medium"] main{max-width:760px;padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-content:start}
+html[data-mode="medium"] header{grid-column:1/-1}
+html[data-mode="medium"] h1{font-size:16px}
+html[data-mode="medium"] .card{margin:0;padding:12px}
+html[data-mode="medium"] #gaugeCard{order:1}
+html[data-mode="medium"] #inputCard{order:2}
+html[data-mode="medium"] #inputCard .row.between{flex-direction:column;align-items:flex-start;gap:10px}
+html[data-mode="medium"] .gauge svg{max-width:200px}
+html[data-mode="medium"] .gc .n{font-size:32px}
+html[data-mode="medium"] .gc .t{font-size:12px}
+html[data-mode="medium"] .pill{font-size:12px;padding:2px 10px}
+html[data-mode="medium"] #adv{padding:5px 10px;font-size:13px}
+
+/* SMALL (popup, dark): title, input, gauge, one-line message. */
+html[data-mode="mini"] .full{display:none}
+html[data-mode="mini"] #msg{display:block;font-size:12px;margin-top:6px}
+html[data-mode="mini"] main{padding:10px 10px 16px}
+html[data-mode="mini"] h1{font-size:15px}
+html[data-mode="mini"] .card{margin:8px 0;padding:10px}
+html[data-mode="mini"] #inputCard .row.between{flex-direction:column;align-items:flex-start;gap:8px}
+html[data-mode="mini"] .gauge svg{max-width:190px}
+html[data-mode="mini"] .gc .n{font-size:30px}
+html[data-mode="mini"] .gc .t{font-size:12px}
+html[data-mode="mini"] .pill{font-size:12px;padding:2px 10px}
+html[data-mode="mini"] #adv{padding:5px 10px;font-size:13px}

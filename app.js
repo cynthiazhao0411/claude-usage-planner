@@ -14,8 +14,8 @@ const S = {
 };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) { /* storage unavailable */ }
 S.lang = "zh"; // UI is Chinese only; ignore any stale value saved by an older version
-const IS_MINI = new URLSearchParams(location.search).has("mini"); // the small popup only reads data, it never writes
-const save = () => { if (IS_MINI) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } };
+const IS_MINI = new URLSearchParams(location.search).has("mini"); // the small popup (dark theme)
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } };
 
 const app = document.getElementById("app");
 const $ = id => app.querySelector("#" + id);  // scoped to #app so it still works inside a pop-out window
@@ -80,7 +80,6 @@ const dayLevel = c => { const r = c.budget > 0 ? c.todayUsed / c.budget : 2; ret
 function render() {
   const T = t(), c = calc(), lv = dayLevel(c), left = c.budget - c.todayUsed;
   document.documentElement.lang = S.lang;
-  app.classList.toggle("compact", S.compact);
   app.querySelectorAll("[data-i]").forEach(el => { el.textContent = T[el.dataset.i]; });
 
   $("head").textContent = T.head(c.idx + 1, c.budget);
@@ -174,13 +173,13 @@ $("apply").onclick = () => {
   render();
 };
 
-// Mini window: opens a small independent popup that shows only the gauge.
+// Mini window: opens a small independent popup that (input + gauge, dark).
 // It reads the same saved data, so update the numbers in the main window and the popup follows.
 // The popup does not depend on the main window staying open.
 $("mini").onclick = () => {
-  const w = 300, h = 300;
+  const w = 300, h = 400;
   const left = (screen.availLeft || 0) + screen.availWidth - w - 20;
-  const top = (screen.availTop || 0) + screen.availHeight - h - 90;
+  const top = (screen.availTop || 0) + screen.availHeight - h - 60;
   const p = window.open(location.pathname + "?mini=1", "usage-mini", `popup=yes,width=${w},height=${h},left=${left},top=${top}`);
   if (!p) { alert(t().popupBlocked); return; }
   window.close(); // replace the big window with the mini one (works in an installed app window)
@@ -197,5 +196,15 @@ if (IS_MINI) {  // in the popup, the same button goes back to the full window
   $("mini").title = "回到完整窗口";
   $("mini").onclick = () => { window.open(location.pathname, "usage-main"); window.close(); };
 }
+// Layout mode follows the window size (large / medium); the CSS does the rest.
+window.addEventListener("resize", () => window.cupMode());
+// Installed desktop app: open in the medium size by default (once per launch).
+if (!IS_MINI && document.documentElement.dataset.phone !== "1" && matchMedia("(display-mode: standalone)").matches) {
+  try { if (!sessionStorage.getItem("cup.sized")) { sessionStorage.setItem("cup.sized", "1"); window.resizeTo(500, 350); } } catch (e) { /* ignore */ }
+}
 setInterval(render, 60000); // keep countdowns fresh
-if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => {});
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  const had = !!navigator.serviceWorker.controller;  // reload once when a new version takes over, so updates apply by themselves
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (had) location.reload(); });
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
