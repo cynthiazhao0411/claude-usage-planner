@@ -182,7 +182,8 @@ $("mini").onclick = () => {
   const left = (screen.availLeft || 0) + screen.availWidth - w - 20;
   const top = (screen.availTop || 0) + screen.availHeight - h - 90;
   const p = window.open(location.pathname + "?mini=1", "usage-mini", `popup=yes,width=${w},height=${h},left=${left},top=${top}`);
-  if (!p) alert(t().popupBlocked);
+  if (!p) { alert(t().popupBlocked); return; }
+  window.close(); // replace the big window with the mini one (works in an installed app window)
 };
 
 $("hh").value = S.hh; $("mm").value = S.mm; fillDays(); render();
@@ -191,6 +192,10 @@ window.addEventListener("storage", e => {
   if (e.key !== KEY || !e.newValue) return;
   try { Object.assign(S, JSON.parse(e.newValue)); S.lang = "zh"; render(); } catch (err) { /* ignore bad data */ }
 });
-if (IS_MINI) $("mini").hidden = true;
+if (IS_MINI) {  // in the popup, the same button goes back to the full window
+  $("mini").textContent = "展开";
+  $("mini").title = "回到完整窗口";
+  $("mini").onclick = () => { window.open(location.pathname, "usage-main"); window.close(); };
+}
 setInterval(render, 60000); // keep countdowns fresh
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => {});
