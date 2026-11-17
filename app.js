@@ -141,7 +141,10 @@ $("routes").addEventListener("click", e => {
   setTimeout(() => { if (!document.hidden) window.open(web, "_blank"); }, 1200); // fall back to web if the app is missing
   window.location.href = scheme;
 });
-$("close").onclick = () => $("modal").classList.remove("on");
+const closeModal = () => $("modal").classList.remove("on");
+$("close").onclick = closeModal;
+$("x").onclick = closeModal;
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 $("modal").onclick = e => { if (e.target === $("modal")) $("modal").classList.remove("on"); };
 $("adv").onclick = () => advise(render());
 
