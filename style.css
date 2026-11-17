@@ -51,7 +51,7 @@ html[data-phone="1"] #mini{display:none}
 html[data-mode="medium"] .full{display:none}
 html[data-mode="medium"] main{max-width:760px;padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-content:start}
 html[data-mode="medium"] main{min-height:100vh;grid-template-rows:auto minmax(0,1fr)}
-html[data-mode="medium"] .card{display:flex;flex-direction:column;justify-content:center}
+html[data-mode="medium"] #gaugeCard,html[data-mode="medium"] #inputCard{display:flex;flex-direction:column;justify-content:center}
 html[data-mode="medium"] header{grid-column:1/-1}
 html[data-mode="medium"] h1{font-size:16px}
 html[data-mode="medium"] .card{margin:0;padding:12px}
