@@ -25,18 +25,18 @@ const COLORS = ["var(--ok)", "var(--warn)", "var(--bad)"];
 const I18N = {
   zh: {
     title: "Claude 用量规划器", usedWeek: "本周已用 (%)", update: "更新", leftToday: "今天还能用",
-    pills: ["宽松，放心用", "快到今日线了", "已超今日预算"], advBtn: "转移建议",
+    pills: ["宽松，放心用", "快到今日线了", "已超计划"], advBtn: "转移建议",
     weekT: "这一周",
     settings: "设置", resetOn: "每周重置", dayStart: "今天开始时已用 (%)",
     dayStartNote: "每天自动记录。第一次是估算值，不准可以改。",
     apply: "应用", close: "知道了",
     note: "额度每周重置，用不完不会累积，所以留一点余量就好，不必过度省。",
-    head: (d, b) => `本周第 ${d} 天。平均每天 14.3%，今天的预算是 ${fmt(b)}%。`,
-    msg: (b, u, r, ah) => `预算 ${fmt(b)}%，今天已用 ${fmt(u)}%，本周还剩 ${fmt(r)}%。` +
-      (ah > 1 ? `比平均进度超前 ${fmt(ah)}%。` : ah < -1 ? `比平均进度落后 ${fmt(-ah)}%。` : "刚好在平均进度上。"),
+    head: (d, b) => `本周第 ${d} 天，每天固定 ${fmt(b)}%。`,
+    msg: (cum, u, over) => `到今天累计额度 ${fmt(cum)}%，已用 ${fmt(u)}%，` +
+      (over > 0 ? `已超出 ${fmt(over)}%，超出的部分会占用之后几天的额度。` : `还剩 ${fmt(-over)}%。`),
     proj: d => d ? ` 按现在的速度，大约 ${d} 用完。` : " 按现在的速度，可以撑到重置。",
     advTitle: ["很宽松", "快用完了", "已达上限"],
-    advDay: l => l >= 0 ? `今天预算还剩 ${fmt(l)}%。` : `超出今日预算 ${fmt(-l)}%，会占用明天的额度。`,
+    advDay: l => l >= 0 ? `到今天累计额度还剩 ${fmt(l)}%。` : `已经超出计划 ${fmt(-l)}%，超出的部分会占用之后几天的额度。`,
     advTail: "主号留给需要长期记忆的任务，其余这样分流：",
     routes: [["策划 / 头脑风暴", "ChatGPT", "适合开放式讨论。"],
              ["文档整理 / 长文总结", "Gemini", "处理大段资料很合适。"],
@@ -57,35 +57,28 @@ function weekStart(now) {
   return d.getTime();
 }
 
-// Core budget maths: today's budget = remaining quota (at start of today) * today's weight / remaining weights.
+// Budget maths: every day gets a fixed share (100 / 7 % with equal weights).
+// Allowance up to the end of today is cumulative: unspent budget carries forward, overspending eats into later days.
 function calc() {
-  const now = Date.now(), ws = weekStart(now), W = WEIGHTS, tot = W.reduce((a, b) => a + b, 0);
+  const now = Date.now(), ws = weekStart(now), W = WEIGHTS, tot = W.reduce((x, y) => x + y, 0);
   const idx = Math.min(6, Math.max(0, Math.floor((now - ws) / DAY)));
   const frac = Math.min(1, Math.max(0, ((now - ws) - idx * DAY) / DAY));
-  const rem = W.slice(idx).reduce((a, b) => a + b, 0);
-  const before = W.slice(0, idx).reduce((a, b) => a + b, 0);
-  if (!S.snap || S.snap.week !== ws || S.snap.day !== idx) {
-    // New day: snapshot the last known reading; on first run, estimate by assuming a steady usage rate.
-    const est = S.used * before / Math.max(before + W[idx] * frac, 1e-4);
-    const prev = S.last && S.last.week === ws ? S.last.used : (idx === 0 ? 0 : est);
-    S.snap = { week: ws, day: idx, used: Math.min(prev, S.used) };
-  }
-  S.last = { week: ws, used: S.used };
-  const start = S.snap.used, budget = (100 - start) * W[idx] / rem;
-  return { ws, idx, W, tot, rem, start, budget, todayUsed: Math.max(0, S.used - start),
+  const before = W.slice(0, idx).reduce((x, y) => x + y, 0);
+  const cum = 100 * (before + W[idx]) / tot;
+  return { ws, idx, W, tot, daily: 100 * W[idx] / tot, cum, left: cum - S.used,
            pace: 100 * (before + W[idx] * frac) / tot, now };
 }
-const dayLevel = c => { const r = c.budget > 0 ? c.todayUsed / c.budget : 2; return r >= 1 ? 2 : r >= 0.8 ? 1 : 0; };
+const dayLevel = c => { const r = S.used / c.cum; return r >= 1 ? 2 : r >= 0.8 ? 1 : 0; };
 
 function render() {
-  const T = t(), c = calc(), lv = dayLevel(c), left = c.budget - c.todayUsed;
+  const T = t(), c = calc(), lv = dayLevel(c), left = c.left;
   document.documentElement.lang = S.lang;
   app.querySelectorAll("[data-i]").forEach(el => { el.textContent = T[el.dataset.i]; });
 
-  $("head").textContent = T.head(c.idx + 1, c.budget);
+  $("head").textContent = T.head(c.idx + 1, c.daily);
   $("used").value = S.used;
   const arc = $("arc");
-  arc.setAttribute("stroke-dasharray", `${c.budget > 0 ? Math.min(1, c.todayUsed / c.budget) * 100 : 100} 100`);
+  arc.setAttribute("stroke-dasharray", `${Math.min(1, S.used / c.cum) * 100} 100`);
   arc.setAttribute("stroke", COLORS[lv]);
   $("left").textContent = left >= 0 ? `${fmt(left)}%` : `+${fmt(-left)}%`;
   $("left").style.color = COLORS[lv];
@@ -99,7 +92,7 @@ function render() {
     runOut = new Date(c.ws + elapsed * 100 / S.used)
       .toLocaleString(S.lang === "zh" ? "zh-CN" : "en-US", { weekday: "short", hour: "numeric", minute: "2-digit" });
   }
-  $("msg").textContent = T.msg(c.budget, c.todayUsed, 100 - S.used, S.used - c.pace) + T.proj(runOut);
+  $("msg").textContent = T.msg(c.cum, S.used, S.used - c.cum) + T.proj(runOut);
 
   // Week card: progress bar with day dividers, then one column per day (the bar height is that day's budget).
   const ahead = S.used - c.pace, wk = $("wk"); wk.innerHTML = "";
@@ -107,15 +100,16 @@ function render() {
   let cum = 0; for (let i = 0; i < 6; i++) { cum += c.W[i]; wk.append(mark("tick", 100 * cum / c.tot)); }
   wk.append(mark("now", Math.min(100, c.pace)));
   $("wkl").textContent = `${fmt(S.used)}% / ${fmt(c.pace)}%`;
-  const budgets = c.W.map((w, i) => i < c.idx ? 100 * w / c.tot : (100 - c.start) * w / c.rem), max = Math.max(...budgets);
-  $("cols").innerHTML = budgets.map((b, i) => {
+  let acc = 0;  // every column is that day's fixed share; it fills as usage runs through the week, red where it runs past today
+  $("cols").innerHTML = c.W.map((w, i) => {
+    const b = 100 * w / c.tot, start = acc; acc += b;
     const day = new Date(c.ws + i * DAY).toLocaleDateString(S.lang === "zh" ? "zh-CN" : "en-US", { weekday: "short" });
-    const fill = i === c.idx ? `<i style="height:${Math.min(100, 100 * c.todayUsed / (b || 1))}%;background:${COLORS[lv]}"></i>` : "";
+    const f = Math.min(1, Math.max(0, (S.used - start) / b));
+    const fill = f > 0 ? `<i style="height:${100 * f}%;background:${i > c.idx ? COLORS[2] : COLORS[lv]}"></i>` : "";
     return `<div class="col ${i < c.idx ? "past" : i === c.idx ? "today" : ""}"><span>${fmt(b)}</span>` +
-           `<div class="b" style="height:${Math.max(8, 100 * b / max)}px">${fill}</div><span>${day}</span></div>`;
+           `<div class="b" style="height:100px">${fill}</div><span>${day}</span></div>`;
   }).join("");
 
-  $("sd").value = fmt(c.start);
   save();
   return { c, lv };
 }
@@ -124,7 +118,7 @@ function mark(cls, pct) { const m = document.createElement("div"); m.className =
 
 // Advice sheet: reasons first, then where to send the next tasks.
 function advise(r) {
-  const T = t(), left = r.c.budget - r.c.todayUsed, mobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+  const T = t(), left = r.c.left, mobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
   $("mt").textContent = T.advTitle[r.lv];
   const parts = [T.advDay(left)];
   $("mb").textContent = parts.join(" ") + " " + T.advTail;
@@ -170,9 +164,6 @@ function fillDays() {
 }
 $("apply").onclick = () => {
   S.dow = +$("dow").value; S.hh = Math.min(23, +$("hh").value || 0); S.mm = Math.min(59, +$("mm").value || 0);
-  const sd = parseFloat($("sd").value);
-  S.snap = null; S.last = null; calc();
-  if (!isNaN(sd)) S.snap.used = Math.min(S.used, clamp(sd));
   render();
 };
 
