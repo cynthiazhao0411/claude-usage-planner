@@ -148,11 +148,20 @@ $("adv").onclick = () => advise(render());
 function maybeAdvise(r, key) {
   if (r.lv > 0 && (S.seen[key] || 0) < r.lv) { S.seen[key] = r.lv; save(); advise(r); }
 }
-const clamp = v => Math.max(0, Math.min(100, parseFloat(v) || 0));
+const clamp = v => Math.round(Math.max(0, Math.min(100, parseFloat(v) || 0)) * 100) / 100;
 function setUsed(v) { S.used = clamp(v); const r = render(); maybeAdvise(r, r.c.ws + "-" + r.c.idx); }
 $("save").onclick = () => setUsed($("used").value);
 $("used").onkeydown = e => { if (e.key === "Enter") setUsed($("used").value); };
 app.querySelectorAll("button[data-d]").forEach(b => { b.onclick = () => setUsed(S.used + Number(b.dataset.d)); });
+// Custom amount: type a number, then press - to subtract it or + (or Enter) to add it.
+function custom(sign) {
+  const v = Math.abs(parseFloat($("cv").value));
+  if (!(v > 0)) { $("cv").focus(); return; }
+  setUsed(S.used + sign * v); $("cv").value = "";
+}
+$("cm").onclick = () => custom(-1);
+$("cp").onclick = () => custom(1);
+$("cv").onkeydown = e => { if (e.key === "Enter") custom(1); };
 
 // Settings
 function fillDays() {
@@ -179,13 +188,49 @@ function popupAt(url, name, w, h, x, y) {
   y = Math.max(T, Math.min(y, T + screen.availHeight - h - 10));
   return window.open(url, name, `popup=yes,width=${w},height=${h},left=${Math.round(x)},top=${Math.round(y)}`);
 }
-$("mini").onclick = () => {
+// Fallback for browsers without Document Picture-in-Picture: a separate popup window.
+function popupMini() {
   const w = 300, h = 380;
   const p = popupAt(location.pathname + "?mini=1", "usage-mini",
     w, h, (screen.availLeft || 0) + screen.availWidth - w - 20, (screen.availTop || 0) + screen.availHeight - h - 60);
   if (!p) { alert(t().popupBlocked); return; }
   window.close(); // replace the big window with the mini one (works in an installed app window)
-};
+}
+// Preferred: Chrome's Picture-in-Picture window. It is always on top by itself, and the main window stays open,
+// so resizing never loses "on top" and no second window has to be created.
+let pipWin = null;
+function attachPip(pw) {
+  pipWin = pw;
+  const pd = pw.document, root = pd.documentElement;
+  root.lang = "zh-CN"; root.dataset.mode = "mini"; root.dataset.phone = "0";
+  document.querySelectorAll('link[rel="stylesheet"]').forEach(l => {
+    const n = pd.createElement("link"); n.rel = "stylesheet"; n.href = l.href; pd.head.append(n);
+  });
+  const note = document.createElement("p");
+  note.className = "sub"; note.style.padding = "16px";
+  note.textContent = "小窗已打开（始终在最前面）。关闭小窗或点“展开”回到这里。";
+  document.body.append(note);
+  pd.body.append(app);
+  pd.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+  const btn = $("mini");
+  btn.textContent = "展开"; btn.title = "回到完整窗口"; btn.onclick = () => pw.close();
+  pw.addEventListener("pagehide", () => {
+    document.body.prepend(app); note.remove(); pipWin = null;
+    btn.textContent = "小窗"; btn.title = "一键变小窗 / 还原"; btn.onclick = openMini;
+    render();
+  });
+  render();
+}
+async function openMini() {
+  if (pipWin) { pipWin.focus(); return; }
+  if ("documentPictureInPicture" in window) {
+    let pw = null;
+    try { pw = await documentPictureInPicture.requestWindow({ width: 300, height: 400 }); } catch (e) { /* fall back to a popup */ }
+    if (pw) { attachPip(pw); return; }
+  }
+  popupMini();
+}
+$("mini").onclick = openMini;
 
 $("hh").value = S.hh; $("mm").value = S.mm; fillDays(); render();
 // Keep the mini popup in sync: reload state whenever another window saves.

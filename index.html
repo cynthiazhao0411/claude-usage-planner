@@ -31,12 +31,20 @@ d.dataset.mode=m;d.dataset.phone=phone?"1":"0";return m;};cupMode();
   <p class="sub full" id="head"></p>
 
   <section class="card" id="inputCard">
-    <div class="row between">
+    <div class="stack">
       <label for="used" data-i="usedWeek"></label>
+      <div class="steps">
+        <button class="ghost sm" data-d="-10">−10</button><button class="ghost sm" data-d="-5">−5</button><button class="ghost sm" data-d="-1">−1</button>
+        <button class="ghost sm" data-d="1">+1</button><button class="ghost sm" data-d="5">+5</button><button class="ghost sm" data-d="10">+10</button>
+      </div>
       <div class="row">
-        <button class="ghost sm" data-d="-1">−1</button><button class="ghost sm" data-d="1">+1</button><button class="ghost sm" data-d="5">+5</button>
         <input id="used" type="number" min="0" max="100" step="0.5" inputmode="decimal">
         <button id="save" data-i="update"></button>
+      </div>
+      <div class="row">
+        <input id="cv" type="number" min="0" step="0.1" inputmode="decimal" placeholder="自定义" aria-label="自定义增减数值">
+        <button class="ghost" id="cm" title="减去自定义数值" aria-label="减去">−</button>
+        <button class="ghost" id="cp" title="加上自定义数值" aria-label="加上">+</button>
       </div>
     </div>
   </section>
