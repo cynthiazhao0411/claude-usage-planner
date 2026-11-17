@@ -65,6 +65,7 @@ html[data-mode="medium"] .stack{gap:8px}
 html[data-mode="medium"] .steps{grid-template-columns:repeat(3,1fr)}
 html[data-mode="medium"] #inputCard .row{gap:6px}
 html[data-mode="medium"] #inputCard input{width:72px;padding:5px 8px}
+html[data-mode="medium"] #inputCard #cv{width:104px}
 html[data-mode="medium"] #inputCard button{padding:7px 12px}
 html[data-mode="medium"] #inputCard button.sm{padding:5px 9px}
 html[data-mode="medium"] .gauge svg{max-width:200px}
