@@ -175,7 +175,7 @@ $("apply").onclick = () => {
 
 // Mini mode: one click shrinks this installed-app window to the bottom-right corner; click again to restore.
 // window.resizeTo / moveTo only work in an installed PWA window, not in a normal browser tab.
-const MINI = { w: 360, h: 480 };
+const MINI = { w: 360, h: 330 }; // Chrome enforces its own minimum width, so the real width may be larger
 $("mini").onclick = () => {
   if (!window.matchMedia("(display-mode: standalone)").matches) { alert(t().needApp); return; }
   if (window.outerHeight < 600) {                       // already small: restore the previous size and position
