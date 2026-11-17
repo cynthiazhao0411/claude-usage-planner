@@ -14,7 +14,8 @@ const S = {
 };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) { /* storage unavailable */ }
 S.lang = "zh"; // UI is Chinese only; ignore any stale value saved by an older version
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } };
+const IS_MINI = new URLSearchParams(location.search).has("mini"); // the small popup only reads data, it never writes
+const save = () => { if (IS_MINI) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } };
 
 const app = document.getElementById("app");
 const $ = id => app.querySelector("#" + id);  // scoped to #app so it still works inside a pop-out window
@@ -41,7 +42,7 @@ const I18N = {
              ["文档整理 / 长文总结", "Gemini", "处理大段资料很合适。"],
              ["其他轻量问题", "备用 Claude 账号", "免费号，轻量问题够用。"]],
     web: "打开网页", open: "打开 App",
-    needApp: "请在已安装的 App 窗口里使用（浏览器标签页不允许调整窗口大小）。",
+    popupBlocked: "浏览器拦截了小窗，请允许这个网站弹出窗口。",
   },
 };
 const t = () => I18N[S.lang];
@@ -173,23 +174,23 @@ $("apply").onclick = () => {
   render();
 };
 
-// Mini mode: one click shrinks this installed-app window to the bottom-right corner; click again to restore.
-// window.resizeTo / moveTo only work in an installed PWA window, not in a normal browser tab.
-const MINI = { w: 360, h: 320 }; // Chrome enforces its own minimum width, so the real width may be larger
+// Mini window: opens a small independent popup that shows only the gauge.
+// It reads the same saved data, so update the numbers in the main window and the popup follows.
+// The popup does not depend on the main window staying open.
 $("mini").onclick = () => {
-  if (!window.matchMedia("(display-mode: standalone)").matches) { alert(t().needApp); return; }
-  if (window.outerHeight < 600) {                       // already small: restore the previous size and position
-    const p = S.prev || { w: 1000, h: 800, x: 100, y: 50 };
-    window.resizeTo(p.w, p.h); window.moveTo(p.x, p.y);
-  } else {
-    S.prev = { w: window.outerWidth, h: window.outerHeight, x: window.screenX, y: window.screenY };
-    window.resizeTo(MINI.w, MINI.h);
-    window.moveTo((screen.availLeft || 0) + screen.availWidth - MINI.w, (screen.availTop || 0) + screen.availHeight - MINI.h);
-  }
-  save();
+  const w = 300, h = 300;
+  const left = (screen.availLeft || 0) + screen.availWidth - w - 20;
+  const top = (screen.availTop || 0) + screen.availHeight - h - 90;
+  const p = window.open(location.pathname + "?mini=1", "usage-mini", `popup=yes,width=${w},height=${h},left=${left},top=${top}`);
+  if (!p) alert(t().popupBlocked);
 };
-window.addEventListener("resize", () => { $("mini").textContent = window.outerHeight < 600 ? "还原" : "小窗"; });
 
 $("hh").value = S.hh; $("mm").value = S.mm; fillDays(); render();
+// Keep the mini popup in sync: reload state whenever another window saves.
+window.addEventListener("storage", e => {
+  if (e.key !== KEY || !e.newValue) return;
+  try { Object.assign(S, JSON.parse(e.newValue)); S.lang = "zh"; render(); } catch (err) { /* ignore bad data */ }
+});
+if (IS_MINI) $("mini").hidden = true;
 setInterval(render, 60000); // keep countdowns fresh
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => {});
