@@ -55,7 +55,7 @@ d.dataset.mode=m;d.dataset.phone=phone?"1":"0";return m;};cupMode();
         <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="var(--track)" stroke-width="18" stroke-linecap="round"/>
         <path id="arc" d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="var(--ok)" stroke-width="18" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
       </svg>
-      <div class="gc"><div class="t" data-i="leftToday"></div><div class="n" id="left"></div></div>
+      <div class="gc"><div class="t" data-i="leftToday"></div><div class="n" id="left"></div><div class="w" id="wkused"></div></div>
     </div>
     <div class="center"><span class="pill" id="pill"></span></div>
     <p class="center full" id="msg"></p>
@@ -79,6 +79,11 @@ d.dataset.mode=m;d.dataset.phone=phone?"1":"0";return m;};cupMode();
         <input id="mm" type="number" min="0" max="59" aria-label="分钟">
       </div>
       <button id="apply" data-i="apply"></button>
+      <hr class="sep">
+      <b>多设备同步（免费）</b>
+      <p class="legend">用你自己的 GitHub 私密 Gist 保存数据，电脑和手机之间自动同步。先在 <a href="https://github.com/settings/tokens/new?scopes=gist&description=claude-usage-planner" target="_blank" rel="noopener">这里</a> 生成一个令牌（Classic，只勾选 gist），再在每台设备上粘贴同一个令牌。令牌只保存在这台设备的浏览器里。</p>
+      <div class="row"><input id="tok" type="password" placeholder="粘贴令牌" autocomplete="off" style="width:170px"><button id="syncon">开启同步</button><button class="ghost" id="syncoff">关闭</button></div>
+      <p class="legend" id="syncst"></p>
     </details>
   </section>
   <p class="legend full" data-i="note"></p>

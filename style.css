@@ -29,6 +29,8 @@ button.sm{padding:5px 9px;font-size:13px}
 .gc{position:absolute;left:0;right:0;bottom:4px}
 .gc .n{font-size:42px;font-weight:800;line-height:1}
 .gc .t{font-size:13px;color:var(--mute)}
+.gc .w{font-size:11px;color:var(--mute);margin-top:3px}
+.sep{border:0;border-top:1px solid var(--line);margin:14px 0 10px}
 .pill{cursor:help;display:inline-block;padding:3px 12px;border-radius:99px;color:#fff;font-weight:700;font-size:14px}
 .bar{position:relative;height:24px;background:var(--track);border-radius:12px;overflow:hidden;margin-top:8px}
 .bar .u{position:absolute;inset:0 auto 0 0}

@@ -1,7 +1,7 @@
 "use strict";
 // Claude Usage Planner: spreads the weekly quota across days.
 // UI text is Chinese only (see I18N); code and comments are English.
-// All data stays in this browser's localStorage. No network requests are made.
+// Data stays in this browser's localStorage. The only network use is the optional sync through your own GitHub Gist.
 
 const DAY = 864e5;
 const WEIGHTS = [1, 1, 1, 1, 1, 1, 1]; // relative weight per day since reset; raise a day to budget more for it
@@ -11,6 +11,7 @@ const S = {
   dow: 1, hh: 0, mm: 0,                     // weekly reset: Monday 00:00 by default
   snap: null, last: null, seen: {},         // start-of-day snapshot, last reading, advice already shown
   lang: "zh", compact: false,
+  ts: 0,                                    // time of the last change to used / reset settings (for sync)
 };
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) { /* storage unavailable */ }
 S.lang = "zh"; // UI is Chinese only; ignore any stale value saved by an older version
@@ -83,6 +84,7 @@ function render() {
   app.querySelector(".gc .t").textContent = left >= 0 ? T.leftToday : T.overToday;  // "今天还能用 x%" or "今天已超 x%"
   $("left").textContent = `${fmt(Math.abs(left))}%`;
   $("left").style.color = COLORS[lv];
+  $("wkused").textContent = `本周已用 ${fmt(S.used)}%`;
   $("pill").textContent = T.pills[lv];
   $("pill").style.background = COLORS[lv];
   $("pill").title = `每天计划 ${fmt(c.daily)}%，到今天累计 ${fmt(c.cum)}%`;  // hover tooltip
@@ -149,7 +151,7 @@ function maybeAdvise(r, key) {
   if (r.lv > 0 && (S.seen[key] || 0) < r.lv) { S.seen[key] = r.lv; save(); advise(r); }
 }
 const clamp = v => Math.round(Math.max(0, Math.min(100, parseFloat(v) || 0)) * 100) / 100;
-function setUsed(v) { S.used = clamp(v); const r = render(); maybeAdvise(r, r.c.ws + "-" + r.c.idx); }
+function setUsed(v) { S.used = clamp(v); S.ts = Date.now(); const r = render(); push(); maybeAdvise(r, r.c.ws + "-" + r.c.idx); }
 $("save").onclick = () => setUsed($("used").value);
 $("used").onkeydown = e => { if (e.key === "Enter") setUsed($("used").value); };
 app.querySelectorAll("button[data-d]").forEach(b => { b.onclick = () => setUsed(S.used + Number(b.dataset.d)); });
@@ -175,7 +177,7 @@ function fillDays() {
 }
 $("apply").onclick = () => {
   S.dow = +$("dow").value; S.hh = Math.min(23, +$("hh").value || 0); S.mm = Math.min(59, +$("mm").value || 0);
-  render();
+  S.ts = Date.now(); render(); push();
 };
 
 // Mini window: opens a small independent popup that (input + gauge, dark).
@@ -214,9 +216,73 @@ if (IS_MINI) {  // in the popup, the same button goes back to the full window
     window.close();
   };
 }
+// ---- Optional sync between devices through a private (unlisted) GitHub Gist.
+// Needs a classic token with only the "gist" permission. The token is kept in this browser only, never in the Gist.
+// Newest change wins (compared by S.ts). Without a token nothing here runs.
+const TOK = "cup.tok", GID = "cup.gist", GDESC = "claude-usage-planner-sync", GFILE = "usage.json";
+const lsGet = k => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
+const lsSet = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) { /* ignore */ } };
+const gh = (path, opt = {}) => fetch("https://api.github.com" + path, { ...opt, headers: {
+  Accept: "application/vnd.github+json", Authorization: "Bearer " + lsGet(TOK), "Content-Type": "application/json" } });
+const setSt = m => { const el = $("syncst"); if (el) el.textContent = m; };
+const hhmm = () => new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
+const syncErr = e => "同步失败：" + (/^40[13]$/.test(e.message) ? "令牌无效或没有 gist 权限" : "网络或令牌有问题");
+const payload = () => JSON.stringify({ used: S.used, dow: S.dow, hh: S.hh, mm: S.mm, ts: S.ts });
+async function ensureGist() {  // find the sync Gist (so a second device reuses it) or create it
+  let id = lsGet(GID); if (id) return id;
+  const r = await gh("/gists?per_page=100"); if (!r.ok) throw new Error(r.status);
+  const found = (await r.json()).find(g => g.description === GDESC && g.files && g.files[GFILE]);
+  if (found) id = found.id;
+  else {
+    if (!S.ts) S.ts = Date.now();
+    const c = await gh("/gists", { method: "POST", body: JSON.stringify({ description: GDESC, public: false, files: { [GFILE]: { content: payload() } } }) });
+    if (!c.ok) throw new Error(c.status);
+    id = (await c.json()).id;
+  }
+  lsSet(GID, id); return id;
+}
+async function pushNow(id) {
+  const r = await gh("/gists/" + id, { method: "PATCH", body: JSON.stringify({ files: { [GFILE]: { content: payload() } } }) });
+  if (!r.ok) throw new Error(r.status);
+}
+let syncing = false, pushTimer = 0;
+async function pull() {
+  if (!lsGet(TOK) || syncing) return;
+  syncing = true;
+  try {
+    const id = await ensureGist();
+    const r = await gh("/gists/" + id); if (!r.ok) throw new Error(r.status);
+    const f = (await r.json()).files[GFILE];
+    const d = f && JSON.parse(f.content);
+    if (d && d.ts > (S.ts || 0)) {
+      S.used = clamp(d.used); S.dow = +d.dow || 0; S.hh = +d.hh || 0; S.mm = +d.mm || 0; S.ts = d.ts;
+      $("hh").value = S.hh; $("mm").value = S.mm; $("dow").value = S.dow; render();
+    } else if (!d || d.ts < (S.ts || 0)) await pushNow(id);
+    setSt("已同步 " + hhmm());
+  } catch (e) { setSt(syncErr(e)); } finally { syncing = false; }
+}
+function push() {  // wait a moment so quick taps on +1 become one upload
+  if (!lsGet(TOK)) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(async () => {
+    try { await pushNow(await ensureGist()); setSt("已同步 " + hhmm()); } catch (e) { setSt(syncErr(e)); }
+  }, 800);
+}
+$("syncon").onclick = () => {
+  const v = $("tok").value.trim();
+  if (v) { lsSet(TOK, v); lsSet(GID, ""); $("tok").value = ""; $("tok").placeholder = "令牌已保存"; }
+  if (!lsGet(TOK)) { setSt("请先粘贴令牌"); return; }
+  setSt("同步中…"); pull();
+};
+$("syncoff").onclick = () => { lsSet(TOK, ""); lsSet(GID, ""); $("tok").placeholder = "粘贴令牌"; setSt("已关闭同步（Gist 里的数据不会被删除）"); };
+if (lsGet(TOK)) { $("tok").placeholder = "令牌已保存"; setSt("同步已开启"); }
+
 // Layout mode follows the window size (large / medium); the CSS does the rest.
 window.addEventListener("resize", () => window.cupMode());
-setInterval(render, 60000); // keep countdowns fresh
+setInterval(() => { render(); pull(); }, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) pull(); });
+window.addEventListener("focus", pull);
+pull(); // keep countdowns fresh
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   const had = !!navigator.serviceWorker.controller;  // reload once when a new version takes over, so updates apply by themselves
   navigator.serviceWorker.addEventListener("controllerchange", () => { if (had) location.reload(); });
