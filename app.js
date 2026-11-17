@@ -176,11 +176,17 @@ $("apply").onclick = () => {
 // Mini window: opens a small independent popup that (input + gauge, dark).
 // It reads the same saved data, so update the numbers in the main window and the popup follows.
 // The popup does not depend on the main window staying open.
+// Open a popup of w x h at (x, y), clamped so it always stays fully on screen.
+function popupAt(url, name, w, h, x, y) {
+  const L = screen.availLeft || 0, T = screen.availTop || 0;
+  x = Math.max(L, Math.min(x, L + screen.availWidth - w - 10));
+  y = Math.max(T, Math.min(y, T + screen.availHeight - h - 10));
+  return window.open(url, name, `popup=yes,width=${w},height=${h},left=${Math.round(x)},top=${Math.round(y)}`);
+}
 $("mini").onclick = () => {
-  const w = 300, h = 400;
-  const left = (screen.availLeft || 0) + screen.availWidth - w - 20;
-  const top = (screen.availTop || 0) + screen.availHeight - h - 60;
-  const p = window.open(location.pathname + "?mini=1", "usage-mini", `popup=yes,width=${w},height=${h},left=${left},top=${top}`);
+  const w = 300, h = 380;
+  const p = popupAt(location.pathname + "?mini=1", "usage-mini",
+    w, h, (screen.availLeft || 0) + screen.availWidth - w - 20, (screen.availTop || 0) + screen.availHeight - h - 60);
   if (!p) { alert(t().popupBlocked); return; }
   window.close(); // replace the big window with the mini one (works in an installed app window)
 };
@@ -194,14 +200,15 @@ window.addEventListener("storage", e => {
 if (IS_MINI) {  // in the popup, the same button goes back to the full window
   $("mini").textContent = "展开";
   $("mini").title = "回到完整窗口";
-  $("mini").onclick = () => { window.open(location.pathname, "usage-main"); window.close(); };
+  $("mini").onclick = () => {  // reopen the medium window right where the mini one is
+    const w = 500, h = 340;
+    const p = popupAt(location.pathname, "usage-main", w, h, window.screenX + 300 - w, window.screenY);
+    if (!p) { alert(t().popupBlocked); return; }
+    window.close();
+  };
 }
 // Layout mode follows the window size (large / medium); the CSS does the rest.
 window.addEventListener("resize", () => window.cupMode());
-// Installed desktop app: open in the medium size by default (once per launch).
-if (!IS_MINI && document.documentElement.dataset.phone !== "1" && matchMedia("(display-mode: standalone)").matches) {
-  try { if (!sessionStorage.getItem("cup.sized")) { sessionStorage.setItem("cup.sized", "1"); window.resizeTo(500, 350); } } catch (e) { /* ignore */ }
-}
 setInterval(render, 60000); // keep countdowns fresh
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
   const had = !!navigator.serviceWorker.controller;  // reload once when a new version takes over, so updates apply by themselves

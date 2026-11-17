@@ -50,6 +50,8 @@ html[data-phone="1"] #mini{display:none}
 /* MEDIUM (default desktop window): flat two columns. Left: today's gauge. Right: weekly input. */
 html[data-mode="medium"] .full{display:none}
 html[data-mode="medium"] main{max-width:760px;padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-content:start}
+html[data-mode="medium"] main{min-height:100vh;grid-template-rows:auto minmax(0,1fr)}
+html[data-mode="medium"] .card{display:flex;flex-direction:column;justify-content:center}
 html[data-mode="medium"] header{grid-column:1/-1}
 html[data-mode="medium"] h1{font-size:16px}
 html[data-mode="medium"] .card{margin:0;padding:12px}
@@ -64,6 +66,7 @@ html[data-mode="medium"] #adv{padding:5px 10px;font-size:13px}
 
 /* SMALL (popup, dark): title, input, gauge, one-line message. */
 html[data-mode="mini"] .full{display:none}
+html[data-mode="mini"] #inputCard{display:none}
 html[data-mode="mini"] #msg{display:block;font-size:12px;margin-top:6px}
 html[data-mode="mini"] main{padding:10px 10px 16px}
 html[data-mode="mini"] h1{font-size:15px}
