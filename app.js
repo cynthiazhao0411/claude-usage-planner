@@ -41,6 +41,7 @@ const I18N = {
              ["文档整理 / 长文总结", "Gemini", "处理大段资料很合适。"],
              ["其他轻量问题", "备用 Claude 账号", "免费号，轻量问题够用。"]],
     web: "打开网页", open: "打开 App",
+    needApp: "请在已安装的 App 窗口里使用（浏览器标签页不允许调整窗口大小）。",
   },
 };
 const t = () => I18N[S.lang];
@@ -153,7 +154,6 @@ function setUsed(v) { S.used = clamp(v); const r = render(); maybeAdvise(r, r.c.
 $("save").onclick = () => setUsed($("used").value);
 $("used").onkeydown = e => { if (e.key === "Enter") setUsed($("used").value); };
 app.querySelectorAll("button[data-d]").forEach(b => { b.onclick = () => setUsed(S.used + Number(b.dataset.d)); });
-$("compact").onclick = () => { S.compact = !S.compact; render(); };
 
 // Settings
 function fillDays() {
@@ -172,6 +172,23 @@ $("apply").onclick = () => {
   if (!isNaN(sd)) S.snap.used = Math.min(S.used, clamp(sd));
   render();
 };
+
+// Mini mode: one click shrinks this installed-app window to the bottom-right corner; click again to restore.
+// window.resizeTo / moveTo only work in an installed PWA window, not in a normal browser tab.
+const MINI = { w: 360, h: 480 };
+$("mini").onclick = () => {
+  if (!window.matchMedia("(display-mode: standalone)").matches) { alert(t().needApp); return; }
+  if (window.outerHeight < 600) {                       // already small: restore the previous size and position
+    const p = S.prev || { w: 1000, h: 800, x: 100, y: 50 };
+    window.resizeTo(p.w, p.h); window.moveTo(p.x, p.y);
+  } else {
+    S.prev = { w: window.outerWidth, h: window.outerHeight, x: window.screenX, y: window.screenY };
+    window.resizeTo(MINI.w, MINI.h);
+    window.moveTo((screen.availLeft || 0) + screen.availWidth - MINI.w, (screen.availTop || 0) + screen.availHeight - MINI.h);
+  }
+  save();
+};
+window.addEventListener("resize", () => { $("mini").textContent = window.outerHeight < 600 ? "还原" : "小窗"; });
 
 $("hh").value = S.hh; $("mm").value = S.mm; fillDays(); render();
 setInterval(render, 60000); // keep countdowns fresh
