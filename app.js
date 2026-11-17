@@ -24,7 +24,7 @@ const COLORS = ["var(--ok)", "var(--warn)", "var(--bad)"];
 
 const I18N = {
   zh: {
-    title: "Claude 用量规划器", usedWeek: "本周已用 (%)", update: "更新", leftToday: "今天还能用",
+    title: "Claude 用量规划器", usedWeek: "本周已用 (%)", update: "更新", leftToday: "今天还能用", overToday: "今天已超",
     pills: ["宽松，放心用", "快到今日线了", "已超计划"], advBtn: "转移建议",
     weekT: "这一周",
     settings: "设置", resetOn: "每周重置", dayStart: "今天开始时已用 (%)",
@@ -80,7 +80,8 @@ function render() {
   const arc = $("arc");
   arc.setAttribute("stroke-dasharray", `${Math.min(1, S.used / c.cum) * 100} 100`);
   arc.setAttribute("stroke", COLORS[lv]);
-  $("left").textContent = left >= 0 ? `${fmt(left)}%` : `+${fmt(-left)}%`;
+  app.querySelector(".gc .t").textContent = left >= 0 ? T.leftToday : T.overToday;  // "今天还能用 x%" or "今天已超 x%"
+  $("left").textContent = `${fmt(Math.abs(left))}%`;
   $("left").style.color = COLORS[lv];
   $("pill").textContent = T.pills[lv];
   $("pill").style.background = COLORS[lv];
