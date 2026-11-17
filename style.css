@@ -50,14 +50,16 @@ html[data-phone="1"] #mini{display:none}
 /* MEDIUM (default desktop window): flat two columns. Left: today's gauge. Right: weekly input. */
 html[data-mode="medium"] .full{display:none}
 html[data-mode="medium"] main{max-width:760px;padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-content:start}
-html[data-mode="medium"] main{min-height:100vh;grid-template-rows:auto minmax(0,1fr)}
-html[data-mode="medium"] #gaugeCard,html[data-mode="medium"] #inputCard{display:flex;flex-direction:column;justify-content:center}
 html[data-mode="medium"] header{grid-column:1/-1}
 html[data-mode="medium"] h1{font-size:16px}
 html[data-mode="medium"] .card{margin:0;padding:12px}
 html[data-mode="medium"] #gaugeCard{order:1}
 html[data-mode="medium"] #inputCard{order:2}
 html[data-mode="medium"] #inputCard .row.between{flex-direction:column;align-items:flex-start;gap:10px}
+html[data-mode="medium"] #inputCard .row{gap:6px}
+html[data-mode="medium"] #inputCard input{width:62px;padding:5px 8px}
+html[data-mode="medium"] #inputCard button{padding:7px 12px}
+html[data-mode="medium"] #inputCard button.sm{padding:5px 9px}
 html[data-mode="medium"] .gauge svg{max-width:200px}
 html[data-mode="medium"] .gc .n{font-size:32px}
 html[data-mode="medium"] .gc .t{font-size:12px}
