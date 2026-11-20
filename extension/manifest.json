@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Claude 用量同步",
+  "version": "1.0.0",
+  "description": "读取你已打开的 claude.ai 用量页上显示的每周百分比，写入你自己的 GitHub 私密 Gist，供“Claude 用量规划器”同步。",
+  "permissions": ["storage"],
+  "host_permissions": ["https://claude.ai/*", "https://api.github.com/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [{
+    "matches": ["https://claude.ai/settings/*"],
+    "js": ["parse.js", "content.js"],
+    "run_at": "document_idle"
+  }],
+  "action": { "default_popup": "popup.html", "default_icon": "icon.png", "default_title": "Claude 用量同步" },
+  "icons": { "128": "icon.png" }
+}

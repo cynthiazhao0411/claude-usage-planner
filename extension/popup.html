@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<style>
+  body{width:320px;margin:0;padding:12px;font:13px/1.45 system-ui,sans-serif;color:#1c1c1c;background:#fff}
+  @media (prefers-color-scheme:dark){body{color:#eee;background:#1d1f21}input{background:#2a2d30;color:#eee;border-color:#555}}
+  h1{font-size:14px;margin:0 0 8px}
+  .st{padding:8px;border-radius:6px;background:#8881;margin-bottom:10px;word-break:break-all}
+  .ok{border-left:4px solid #15803d}.bad{border-left:4px solid #b91c1c}.warn{border-left:4px solid #b45309}
+  label{display:block;margin-top:8px;font-weight:600}
+  input{width:100%;box-sizing:border-box;padding:5px;border:1px solid #bbb;border-radius:4px}
+  button{margin-top:8px;padding:5px 12px}
+  small{color:#888}
+  details{margin-top:10px}pre{white-space:pre-wrap;font-size:11px;max-height:140px;overflow:auto}
+</style></head><body>
+<h1>Claude 用量同步</h1>
+<div id="st" class="st">读取中…</div>
+<label for="tok">GitHub 令牌（Classic，只勾 gist，和规划器用同一个）</label>
+<input id="tok" type="password" autocomplete="off" placeholder="粘贴令牌">
+<label for="rm">用量页自动刷新间隔（分钟，0 = 不自动刷新）</label>
+<input id="rm" type="number" min="0" max="60" step="1">
+<button id="save">保存</button> <small id="saved"></small>
+<details><summary>诊断信息（读不到数字时发给我）</summary><pre id="diag"></pre></details>
+<script src="popup.js"></script>
+</body></html>

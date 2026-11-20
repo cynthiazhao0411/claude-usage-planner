@@ -256,7 +256,8 @@ async function pull() {
     const d = f && JSON.parse(f.content);
     if (d && d.ts > (S.ts || 0)) {
       S.used = clamp(d.used); S.dow = +d.dow || 0; S.hh = +d.hh || 0; S.mm = +d.mm || 0; S.ts = d.ts;
-      $("hh").value = S.hh; $("mm").value = S.mm; $("dow").value = S.dow; render();
+      $("hh").value = S.hh; $("mm").value = S.mm; $("dow").value = S.dow;
+      const r = render(); maybeAdvise(r, r.c.ws + "-" + r.c.idx);  // an update from the browser extension also triggers the advice sheet
     } else if (!d || d.ts < (S.ts || 0)) await pushNow(id);
     setSt("已同步 " + hhmm());
   } catch (e) { setSt(syncErr(e)); } finally { syncing = false; }
@@ -279,7 +280,8 @@ if (lsGet(TOK)) { $("tok").placeholder = "令牌已保存"; setSt("同步已开�
 
 // Layout mode follows the window size (large / medium); the CSS does the rest.
 window.addEventListener("resize", () => window.cupMode());
-setInterval(() => { render(); pull(); }, 60000);
+setInterval(render, 60000);   // keep countdowns fresh
+setInterval(pull, 20000);     // poll the Gist often enough that an extension update shows up within ~20 s (well under GitHub's rate limit)
 document.addEventListener("visibilitychange", () => { if (!document.hidden) pull(); });
 window.addEventListener("focus", pull);
 pull(); // keep countdowns fresh
